@@ -1,2 +1,0 @@
-This is a test file called stuff2.txt.
-It was created as requested.
