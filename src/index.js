@@ -4,6 +4,13 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { CodeAssistant } from './core/CodeAssistant.js';
 import { CLIInterface } from './interfaces/CLIInterface.js';
+import { logger } from './utils/Logger.js';
+
+// Set debug mode if DEBUG environment variable is set
+if (process.env.DEBUG) {
+  logger.setLevel('debug');
+  logger.debug('Debug mode enabled');
+}
 
 const program = new Command();
 
@@ -20,7 +27,13 @@ program
   .option('--no-auto-apply', 'Disable automatic application of changes')
   .option('--no-auto-commit', 'Disable automatic git commits')
   .option('--dry-run', 'Show changes without applying them')
+  .option('--debug', 'Enable debug logging')
   .action(async (options) => {
+    if (options.debug) {
+      logger.setLevel('debug');
+      logger.debug('Debug mode enabled via CLI flag');
+    }
+    
     const assistant = new CodeAssistant({
       model: options.model,
       files: options.files || [],
@@ -41,7 +54,13 @@ program
   .option('--no-auto-apply', 'Disable automatic application of changes')
   .option('--no-auto-commit', 'Disable automatic git commits')
   .option('--dry-run', 'Show changes without applying them')
+  .option('--debug', 'Enable debug logging')
   .action(async (message, options) => {
+    if (options.debug) {
+      logger.setLevel('debug');
+      logger.debug('Debug mode enabled via CLI flag');
+    }
+    
     const assistant = new CodeAssistant({
       model: options.model,
       files: options.files || [],
@@ -64,6 +83,7 @@ program
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
+      logger.debug('Full error:', error);
       process.exit(1);
     }
   });

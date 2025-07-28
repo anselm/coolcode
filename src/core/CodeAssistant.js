@@ -3,6 +3,7 @@ import { ContextManager } from './ContextManager.js';
 import { GitTool } from '../tools/GitTool.js';
 import { DiffTool } from '../tools/DiffTool.js';
 import { PromptLoader } from './PromptLoader.js';
+import { logger } from '../utils/Logger.js';
 import chalk from 'chalk';
 
 export class CodeAssistant {
@@ -12,6 +13,14 @@ export class CodeAssistant {
     this.autoApply = options.autoApply !== false; // Default to true
     this.autoCommit = options.autoCommit !== false; // Default to true
     this.dryRun = options.dryRun || false;
+    
+    logger.debug('CodeAssistant constructor:', {
+      model: this.model,
+      files: this.files,
+      autoApply: this.autoApply,
+      autoCommit: this.autoCommit,
+      dryRun: this.dryRun
+    });
     
     this.llm = new LLMProvider({ model: this.model });
     this.context = new ContextManager();
@@ -30,19 +39,27 @@ export class CodeAssistant {
   }
   
   async initialize() {
+    logger.debug('Initializing CodeAssistant...');
+    
     // Load prompts first
     await this.prompts.loadPrompts();
+    logger.debug('Prompts loaded');
     
     // Load initial context
     if (this.files.length > 0) {
+      logger.debug('Loading specified files:', this.files);
       await this.context.addFiles(this.files);
     }
     
     // Auto-detect relevant files if none specified
     if (this.files.length === 0) {
+      logger.debug('Auto-detecting relevant files...');
       const relevantFiles = await this.context.detectRelevantFiles();
+      logger.debug('Found relevant files:', relevantFiles);
       await this.context.addFiles(relevantFiles);
     }
+    
+    logger.debug('CodeAssistant initialization complete');
   }
   
   async processRequest(userInput) {
@@ -86,6 +103,9 @@ export class CodeAssistant {
   }
   
   parseChanges(response) {
+    logger.debug('Parsing LLM response for changes...');
+    logger.debug('Response length:', response.length);
+    
     // Parse SEARCH/REPLACE blocks from LLM response
     const searchReplaceRegex = /```(\w+)?\n<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE\n```/g;
     const changes = [];
@@ -102,6 +122,7 @@ export class CodeAssistant {
       if (line && !line.startsWith('```') && !line.startsWith('#') && 
           (line.includes('/') || line.includes('.')) && 
           !line.includes(' ')) {
+        logger.debug('Found potential file path:', line);
         currentFile = line;
       }
       
@@ -122,6 +143,9 @@ export class CodeAssistant {
           const searchMatch = blockContent.match(/<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/);
           
           if (searchMatch && currentFile) {
+            logger.debug('Found SEARCH/REPLACE block for file:', currentFile);
+            logger.debug('Search content length:', searchMatch[1].length);
+            logger.debug('Replace content length:', searchMatch[2].length);
             changes.push({
               file: currentFile,
               search: searchMatch[1],
@@ -132,10 +156,26 @@ export class CodeAssistant {
       }
     }
     
+    logger.debug('Parsed changes:', changes.length, 'changes found');
+    changes.forEach((change, i) => {
+      logger.debug(`Change ${i + 1}:`, {
+        file: change.file,
+        isNewFile: change.search === '',
+        searchLength: change.search.length,
+        replaceLength: change.replace.length
+      });
+    });
+    
     return changes;
   }
   
   async applyChanges(result) {
+    logger.debug('applyChanges called with:', {
+      dryRun: this.dryRun,
+      changesCount: result.changes.length,
+      autoCommit: this.autoCommit
+    });
+    
     if (this.dryRun) {
       console.log(chalk.yellow('Dry run - changes would be:'));
       for (const diff of result.diffs) {
@@ -148,16 +188,26 @@ export class CodeAssistant {
     
     const changedFiles = [];
     for (const change of result.changes) {
+      logger.debug('Applying change to file:', change.file);
+      logger.debug('Change details:', {
+        isNewFile: change.search === '',
+        searchLength: change.search.length,
+        replaceLength: change.replace.length
+      });
+      
       await this.diff.applyChange(change);
       console.log(chalk.green(`✓ Applied changes to ${change.file}`));
       changedFiles.push(change.file);
     }
+    
+    logger.debug('All changes applied. Changed files:', changedFiles);
     
     // Update context with new file contents
     await this.context.refresh();
     
     // Auto-commit if enabled and we're in a git repo
     if (this.autoCommit && changedFiles.length > 0) {
+      logger.debug('Auto-committing changes...');
       await this.commitChanges(changedFiles, result.userRequest);
     }
   }
