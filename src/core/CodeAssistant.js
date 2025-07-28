@@ -16,7 +16,14 @@ export class CodeAssistant {
     this.diff = new DiffTool();
     this.prompts = new PromptLoader();
     
-    this.initialize();
+    this.initialized = false;
+  }
+  
+  async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initialize();
+      this.initialized = true;
+    }
   }
   
   async initialize() {
@@ -36,6 +43,8 @@ export class CodeAssistant {
   }
   
   async processRequest(userInput) {
+    await this.ensureInitialized();
+    
     console.log(chalk.blue('Processing request...'));
     
     // Get current context
@@ -135,7 +144,8 @@ export class CodeAssistant {
     await this.context.removeFiles(files);
   }
   
-  getContext() {
+  async getContext() {
+    await this.ensureInitialized();
     return this.context.getCurrentContext();
   }
 }
