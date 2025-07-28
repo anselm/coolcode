@@ -79,7 +79,10 @@ export class DiffTool {
     const newContent = this.applySearchReplace(content, search, replace);
     
     // Ensure directory exists
-    await fs.ensureDir(file.substring(0, file.lastIndexOf('/')));
+    const dirPath = path.dirname(file);
+    if (dirPath && dirPath !== '.') {
+      await fs.ensureDir(dirPath);
+    }
     
     // Write new content
     await fs.writeFile(file, newContent, 'utf8');
