@@ -69,27 +69,53 @@ export class LLMProvider {
   
   async streamComplete(prompt, onChunk, options = {}) {
     try {
-      const stream = await this.client.chat.completions.create({
-        model: this.model,
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        temperature: options.temperature || 0.1,
-        max_tokens: options.maxTokens || 4000,
-        stream: true,
-        ...options
-      });
-      
-      let fullResponse = '';
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        fullResponse += content;
-        if (onChunk) {
-          onChunk(content);
+      if (this.provider === 'anthropic') {
+        const stream = await this.client.messages.create({
+          model: this.model,
+          max_tokens: options.maxTokens || 4000,
+          temperature: options.temperature || 0.1,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          stream: true,
+          ...options
+        });
+        
+        let fullResponse = '';
+        for await (const chunk of stream) {
+          if (chunk.type === 'content_block_delta') {
+            const content = chunk.delta.text || '';
+            fullResponse += content;
+            if (onChunk) {
+              onChunk(content);
+            }
+          }
         }
+        
+        return fullResponse;
+      } else {
+        const stream = await this.client.chat.completions.create({
+          model: this.model,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          temperature: options.temperature || 0.1,
+          max_tokens: options.maxTokens || 4000,
+          stream: true,
+          ...options
+        });
+        
+        let fullResponse = '';
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || '';
+          fullResponse += content;
+          if (onChunk) {
+            onChunk(content);
+          }
+        }
+        
+        return fullResponse;
       }
-      
-      return fullResponse;
     } catch (error) {
       throw new Error(`LLM API error: ${error.message}`);
     }
