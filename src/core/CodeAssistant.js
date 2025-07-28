@@ -2,7 +2,7 @@ import { LLMProvider } from '../providers/LLMProvider.js';
 import { ContextManager } from './ContextManager.js';
 import { GitTool } from '../tools/GitTool.js';
 import { DiffTool } from '../tools/DiffTool.js';
-import { PromptBuilder } from './PromptBuilder.js';
+import { PromptEngine } from './PromptEngine.js';
 import chalk from 'chalk';
 
 export class CodeAssistant {
@@ -14,7 +14,7 @@ export class CodeAssistant {
     this.context = new ContextManager();
     this.git = new GitTool();
     this.diff = new DiffTool();
-    this.prompts = new PromptBuilder();
+    this.prompts = new PromptEngine();
     
     this.initialize();
   }
