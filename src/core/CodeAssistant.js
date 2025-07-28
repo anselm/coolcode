@@ -7,7 +7,7 @@ import chalk from 'chalk';
 
 export class CodeAssistant {
   constructor(options = {}) {
-    this.model = options.model || 'gpt-4';
+    this.model = options.model || 'claude-3-5-sonnet-20241022';
     this.files = options.files || [];
     
     this.llm = new LLMProvider({ model: this.model });

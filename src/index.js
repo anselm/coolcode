@@ -16,7 +16,7 @@ program
   .command('chat')
   .description('Start interactive chat session')
   .option('-f, --files <files...>', 'Files to include in context')
-  .option('-m, --model <model>', 'LLM model to use', 'gpt-4')
+  .option('-m, --model <model>', 'LLM model to use', 'claude-3-5-sonnet-20241022')
   .action(async (options) => {
     const assistant = new CodeAssistant({
       model: options.model,
@@ -31,7 +31,7 @@ program
   .command('apply <message>')
   .description('Apply a single change request')
   .option('-f, --files <files...>', 'Files to include in context')
-  .option('-m, --model <model>', 'LLM model to use', 'gpt-4')
+  .option('-m, --model <model>', 'LLM model to use', 'claude-3-5-sonnet-20241022')
   .option('--dry-run', 'Show changes without applying them')
   .action(async (message, options) => {
     const assistant = new CodeAssistant({

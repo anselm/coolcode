@@ -1,32 +1,67 @@
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export class LLMProvider {
   constructor(options = {}) {
-    this.model = options.model || 'gpt-4';
-    this.apiKey = options.apiKey || process.env.OPENAI_API_KEY;
+    this.model = options.model || 'claude-3-5-sonnet-20241022';
+    this.provider = this.detectProvider(this.model);
     
-    if (!this.apiKey) {
-      throw new Error('OpenAI API key is required. Set OPENAI_API_KEY environment variable.');
+    if (this.provider === 'anthropic') {
+      this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
+      if (!this.apiKey) {
+        throw new Error('Anthropic API key is required. Set ANTHROPIC_API_KEY environment variable.');
+      }
+      this.client = new Anthropic({
+        apiKey: this.apiKey
+      });
+    } else {
+      this.apiKey = options.apiKey || process.env.OPENAI_API_KEY;
+      if (!this.apiKey) {
+        throw new Error('OpenAI API key is required. Set OPENAI_API_KEY environment variable.');
+      }
+      this.client = new OpenAI({
+        apiKey: this.apiKey
+      });
     }
-    
-    this.client = new OpenAI({
-      apiKey: this.apiKey
-    });
+  }
+  
+  detectProvider(model) {
+    if (model.startsWith('claude')) {
+      return 'anthropic';
+    }
+    return 'openai';
   }
   
   async complete(prompt, options = {}) {
     try {
-      const response = await this.client.chat.completions.create({
-        model: this.model,
-        messages: [
-          { role: 'user', content: prompt }
-        ],
-        temperature: options.temperature || 0.1,
-        max_tokens: options.maxTokens || 4000,
-        ...options
-      });
-      
-      return response.choices[0].message.content;
+      if (this.provider === 'anthropic') {
+        const response = await this.client.messages.create({
+          model: this.model,
+          max_tokens: options.maxTokens || 4000,
+          temperature: options.temperature || 0.1,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          ...options
+        });
+        
+        return response.content[0].text;
+      } else {
+        const response = await this.client.chat.completions.create({
+          model: this.model,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          temperature: options.temperature || 0.1,
+          max_tokens: options.maxTokens || 4000,
+          ...options
+        });
+        
+        return response.choices[0].message.content;
+      }
     } catch (error) {
       throw new Error(`LLM API error: ${error.message}`);
     }

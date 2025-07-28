@@ -19,10 +19,21 @@ npm install
 
 ## Setup
 
-Set your OpenAI API key:
+Create a `.env` file in the project root and add your API keys:
 
 ```bash
-export OPENAI_API_KEY="your-api-key-here"
+# For Claude (default)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# For OpenAI (optional)
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+Or set environment variables:
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key-here"
+export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
 ## Usage
@@ -85,9 +96,17 @@ src/
 The assistant supports various models and options:
 
 ```bash
-npm start chat --model gpt-3.5-turbo
-npm start apply "Fix the bug" --files src/bug.js --model gpt-4
+# Use Claude (default)
+npm start chat --model claude-3-5-sonnet-20241022
+
+# Use OpenAI
+npm start chat --model gpt-4
+npm start apply "Fix the bug" --files src/bug.js --model gpt-3.5-turbo
 ```
+
+Supported models:
+- **Claude**: `claude-3-5-sonnet-20241022`, `claude-3-haiku-20240307`, `claude-3-opus-20240229`
+- **OpenAI**: `gpt-4`, `gpt-3.5-turbo`, `gpt-4-turbo`
 
 ## Development
 
