@@ -16,6 +16,26 @@ export class CLIInterface {
       process.exit(0);
     });
     
+    // Handle Ctrl+Z (suspend) - restore default behavior
+    process.on('SIGTSTP', () => {
+      console.log(chalk.yellow('\n\nReceived SIGTSTP (Ctrl+Z). Suspending...'));
+      // Restore terminal to normal mode before suspending
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+      // Send SIGTSTP to self to actually suspend
+      process.kill(process.pid, 'SIGTSTP');
+    });
+    
+    // Handle resume from suspension
+    process.on('SIGCONT', () => {
+      console.log(chalk.blue('\nResumed. Type anything to continue...'));
+      // Restore raw mode if needed
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true);
+      }
+    });
+    
     // Handle other termination signals
     process.on('SIGTERM', () => {
       console.log(chalk.yellow('\n\nReceived SIGTERM. Exiting gracefully...'));
@@ -50,14 +70,25 @@ export class CLIInterface {
   
   async promptUser() {
     try {
+      // Set up inquirer with better signal handling
       const { input } = await inquirer.prompt([
         {
           type: 'input',
           name: 'input',
           message: chalk.blue('> '),
-          prefix: ''
+          prefix: '',
+          // Allow inquirer to handle signals more gracefully
+          transformer: (input) => input,
+          validate: () => true
         }
-      ]);
+      ], {
+        // Enable signal handling in inquirer
+        onCancel: () => {
+          console.log(chalk.yellow('\nOperation cancelled'));
+          this.running = false;
+          process.exit(0);
+        }
+      });
       
       await this.handleInput(input.trim());
     } catch (error) {

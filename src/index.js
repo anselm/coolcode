@@ -23,6 +23,21 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
+// Handle Ctrl+Z globally
+process.on('SIGTSTP', () => {
+  console.log(chalk.yellow('\n\nReceived SIGTSTP (Ctrl+Z). Suspending...'));
+  // Restore terminal state before suspending
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(false);
+  }
+  process.kill(process.pid, 'SIGTSTP');
+});
+
+// Handle resume
+process.on('SIGCONT', () => {
+  console.log(chalk.blue('\nProcess resumed'));
+});
+
 const program = new Command();
 
 program
