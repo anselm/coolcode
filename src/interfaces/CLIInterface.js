@@ -95,6 +95,16 @@ export class CLIInterface {
       console.clear();
       return;
     }
+
+    if (input === '/config') {
+      this.showConfig();
+      return;
+    }
+
+    if (input.startsWith('/set ')) {
+      await this.handleConfigSet(input.substring(5));
+      return;
+    }
     
     // Process as coding request
     await this.processCodingRequest(input);
@@ -117,21 +127,25 @@ export class CLIInterface {
           this.assistant.diff.displayDiff(diff);
         }
         
-        // Ask for confirmation
-        const { confirm } = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'confirm',
-            message: 'Apply these changes?',
-            default: true
+        // If auto-apply is disabled, ask for confirmation
+        if (!this.assistant.autoApply) {
+          const { confirm } = await inquirer.prompt([
+            {
+              type: 'confirm',
+              name: 'confirm',
+              message: 'Apply these changes?',
+              default: true
+            }
+          ]);
+          
+          if (confirm) {
+            await this.assistant.applyChanges(result);
+            console.log(chalk.green('✅ Changes applied successfully!'));
+          } else {
+            console.log(chalk.yellow('❌ Changes discarded'));
           }
-        ]);
-        
-        if (confirm) {
-          await this.assistant.applyChanges(result);
-          console.log(chalk.green('✅ Changes applied successfully!'));
         } else {
-          console.log(chalk.yellow('❌ Changes discarded'));
+          console.log(chalk.green('✅ Changes applied and committed automatically!'));
         }
       }
       
@@ -147,8 +161,51 @@ export class CLIInterface {
     console.log(chalk.gray('  /add <files...>      - Add files to context'));
     console.log(chalk.gray('  /remove <files...>   - Remove files from context'));
     console.log(chalk.gray('  /context             - Show current context'));
+    console.log(chalk.gray('  /config              - Show current configuration'));
+    console.log(chalk.gray('  /set <key>=<value>   - Set configuration option'));
     console.log(chalk.gray('  /clear               - Clear screen'));
     console.log(chalk.gray('  <message>            - Send coding request to AI'));
     console.log('');
+    console.log(chalk.blue.bold('📝 Configuration Options:'));
+    console.log(chalk.gray('  autoApply=true/false - Auto-apply changes (default: true)'));
+    console.log(chalk.gray('  autoCommit=true/false - Auto-commit changes (default: true)'));
+    console.log(chalk.gray('  dryRun=true/false    - Show changes without applying (default: false)'));
+    console.log('');
+  }
+
+  showConfig() {
+    console.log(chalk.blue.bold('\n⚙️ Current Configuration:'));
+    console.log(chalk.gray(`  Model: ${this.assistant.model}`));
+    console.log(chalk.gray(`  Auto-apply: ${this.assistant.autoApply}`));
+    console.log(chalk.gray(`  Auto-commit: ${this.assistant.autoCommit}`));
+    console.log(chalk.gray(`  Dry run: ${this.assistant.dryRun}`));
+    console.log('');
+  }
+
+  async handleConfigSet(configString) {
+    const [key, value] = configString.split('=');
+    if (!key || value === undefined) {
+      console.log(chalk.red('Usage: /set <key>=<value>'));
+      return;
+    }
+
+    const boolValue = value.toLowerCase() === 'true';
+    
+    switch (key.trim()) {
+      case 'autoApply':
+        this.assistant.autoApply = boolValue;
+        console.log(chalk.green(`Set autoApply to ${boolValue}`));
+        break;
+      case 'autoCommit':
+        this.assistant.autoCommit = boolValue;
+        console.log(chalk.green(`Set autoCommit to ${boolValue}`));
+        break;
+      case 'dryRun':
+        this.assistant.dryRun = boolValue;
+        console.log(chalk.green(`Set dryRun to ${boolValue}`));
+        break;
+      default:
+        console.log(chalk.red(`Unknown configuration key: ${key}`));
+    }
   }
 }

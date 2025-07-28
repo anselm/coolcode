@@ -9,6 +9,9 @@ export class CodeAssistant {
   constructor(options = {}) {
     this.model = options.model || 'claude-3-5-sonnet-20241022';
     this.files = options.files || [];
+    this.autoApply = options.autoApply !== false; // Default to true
+    this.autoCommit = options.autoCommit !== false; // Default to true
+    this.dryRun = options.dryRun || false;
     
     this.llm = new LLMProvider({ model: this.model });
     this.context = new ContextManager();
@@ -66,12 +69,20 @@ export class CodeAssistant {
     // Generate diffs
     const diffs = await this.diff.generateDiffs(changes);
     
-    return {
+    const result = {
       response,
       changes,
       diffs,
-      context
+      context,
+      userRequest: userInput
     };
+
+    // Auto-apply changes if enabled
+    if (this.autoApply && changes.length > 0) {
+      await this.applyChanges(result);
+    }
+    
+    return result;
   }
   
   parseChanges(response) {
@@ -125,15 +136,71 @@ export class CodeAssistant {
   }
   
   async applyChanges(result) {
+    if (this.dryRun) {
+      console.log(chalk.yellow('Dry run - changes would be:'));
+      for (const diff of result.diffs) {
+        this.diff.displayDiff(diff);
+      }
+      return;
+    }
+
     console.log(chalk.blue('Applying changes...'));
     
+    const changedFiles = [];
     for (const change of result.changes) {
       await this.diff.applyChange(change);
       console.log(chalk.green(`✓ Applied changes to ${change.file}`));
+      changedFiles.push(change.file);
     }
     
     // Update context with new file contents
     await this.context.refresh();
+    
+    // Auto-commit if enabled and we're in a git repo
+    if (this.autoCommit && changedFiles.length > 0) {
+      await this.commitChanges(changedFiles, result.userRequest);
+    }
+  }
+
+  async commitChanges(files, userRequest) {
+    try {
+      const isGitRepo = await this.git.isGitRepo();
+      if (!isGitRepo) {
+        console.log(chalk.yellow('Not in a git repository, skipping commit'));
+        return;
+      }
+
+      // Add changed files
+      await this.git.add(files);
+      
+      // Generate commit message
+      const commitMessage = this.generateCommitMessage(userRequest, files);
+      
+      // Commit changes
+      const result = await this.git.commit(commitMessage);
+      console.log(chalk.green(`✓ Committed changes: ${commitMessage}`));
+      
+      if (result.commit) {
+        console.log(chalk.gray(`  Commit hash: ${result.commit.substring(0, 7)}`));
+      }
+    } catch (error) {
+      console.log(chalk.yellow(`Warning: Could not commit changes: ${error.message}`));
+    }
+  }
+
+  generateCommitMessage(userRequest, files) {
+    // Clean up user request for commit message
+    const cleanRequest = userRequest
+      .replace(/[^\w\s-]/g, '') // Remove special chars
+      .trim()
+      .substring(0, 50); // Limit length
+    
+    const fileCount = files.length;
+    const fileList = fileCount <= 3 
+      ? files.map(f => f.split('/').pop()).join(', ')
+      : `${fileCount} files`;
+    
+    return `feat: ${cleanRequest} (${fileList})`;
   }
   
   async addFiles(files) {

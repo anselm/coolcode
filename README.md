@@ -50,6 +50,12 @@ Or with specific files:
 npm start chat -f src/index.js package.json
 ```
 
+Disable auto-apply and auto-commit:
+
+```bash
+npm start chat --no-auto-apply --no-auto-commit
+```
+
 ### Single Command Mode
 
 ```bash
@@ -62,6 +68,12 @@ With dry run:
 npm start apply "Refactor the user interface" --dry-run
 ```
 
+Disable automatic behavior:
+
+```bash
+npm start apply "Fix the bug" --no-auto-apply --no-auto-commit
+```
+
 ### CLI Commands
 
 In interactive mode:
@@ -70,8 +82,19 @@ In interactive mode:
 - `/add <files...>` - Add files to context
 - `/remove <files...>` - Remove files from context
 - `/context` - Show current context
+- `/config` - Show current configuration
+- `/set <key>=<value>` - Set configuration (autoApply, autoCommit, dryRun)
 - `/clear` - Clear screen
 - `exit` or `quit` - Exit
+
+### Default Behavior
+
+By default, the assistant will:
+1. **Automatically apply** code changes without asking for confirmation
+2. **Automatically commit** changes to git with generated commit messages
+3. Show diffs before applying changes
+
+You can override this behavior with command-line flags or runtime configuration.
 
 ## Architecture
 

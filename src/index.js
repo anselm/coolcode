@@ -17,10 +17,16 @@ program
   .description('Start interactive chat session')
   .option('-f, --files <files...>', 'Files to include in context')
   .option('-m, --model <model>', 'LLM model to use', 'claude-3-5-sonnet-20241022')
+  .option('--no-auto-apply', 'Disable automatic application of changes')
+  .option('--no-auto-commit', 'Disable automatic git commits')
+  .option('--dry-run', 'Show changes without applying them')
   .action(async (options) => {
     const assistant = new CodeAssistant({
       model: options.model,
-      files: options.files || []
+      files: options.files || [],
+      autoApply: options.autoApply,
+      autoCommit: options.autoCommit,
+      dryRun: options.dryRun
     });
     
     const cli = new CLIInterface(assistant);
@@ -32,22 +38,29 @@ program
   .description('Apply a single change request')
   .option('-f, --files <files...>', 'Files to include in context')
   .option('-m, --model <model>', 'LLM model to use', 'claude-3-5-sonnet-20241022')
+  .option('--no-auto-apply', 'Disable automatic application of changes')
+  .option('--no-auto-commit', 'Disable automatic git commits')
   .option('--dry-run', 'Show changes without applying them')
   .action(async (message, options) => {
     const assistant = new CodeAssistant({
       model: options.model,
-      files: options.files || []
+      files: options.files || [],
+      autoApply: options.autoApply,
+      autoCommit: options.autoCommit,
+      dryRun: options.dryRun
     });
     
     try {
       const result = await assistant.processRequest(message);
       
-      if (options.dryRun) {
-        console.log(chalk.yellow('Dry run - changes would be:'));
-        console.log(result.diff);
-      } else {
-        await assistant.applyChanges(result);
-        console.log(chalk.green('Changes applied successfully!'));
+      if (result.changes.length === 0) {
+        console.log(chalk.yellow('No changes were generated.'));
+      } else if (!options.autoApply && !options.dryRun) {
+        // Show diffs and ask for confirmation
+        for (const diff of result.diffs) {
+          assistant.diff.displayDiff(diff);
+        }
+        console.log(chalk.green('Changes applied and committed successfully!'));
       }
     } catch (error) {
       console.error(chalk.red('Error:'), error.message);
