@@ -1,5 +1,6 @@
 import { diffLines, createPatch } from 'diff';
 import fs from 'fs-extra';
+import path from 'path';
 import chalk from 'chalk';
 
 export class DiffTool {
