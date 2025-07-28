@@ -2,7 +2,7 @@ import { LLMProvider } from '../providers/LLMProvider.js';
 import { ContextManager } from './ContextManager.js';
 import { GitTool } from '../tools/GitTool.js';
 import { DiffTool } from '../tools/DiffTool.js';
-import { PromptEngine } from './PromptEngine.js';
+import { PromptLoader } from './PromptLoader.js';
 import chalk from 'chalk';
 
 export class CodeAssistant {
@@ -14,12 +14,15 @@ export class CodeAssistant {
     this.context = new ContextManager();
     this.git = new GitTool();
     this.diff = new DiffTool();
-    this.prompts = new PromptEngine();
+    this.prompts = new PromptLoader();
     
     this.initialize();
   }
   
   async initialize() {
+    // Load prompts first
+    await this.prompts.loadPrompts();
+    
     // Load initial context
     if (this.files.length > 0) {
       await this.context.addFiles(this.files);

@@ -1,0 +1,4 @@
+Current project context:
+- Total files: {totalFiles}
+- Total size: {totalSize} bytes
+- Files: {filesList}

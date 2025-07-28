@@ -1,0 +1,15 @@
+Please help with the following coding request:
+
+USER REQUEST: {userRequest}
+
+CURRENT CONTEXT:
+{context}
+
+FILES IN CONTEXT:
+{filesList}
+
+FILE CONTENTS:
+{fileContents}
+
+Please analyze the request and provide the necessary code changes using SEARCH/REPLACE blocks.
+If you need additional files to complete the request, please specify which files you need.
