@@ -5,6 +5,23 @@ export class CLIInterface {
   constructor(assistant) {
     this.assistant = assistant;
     this.running = false;
+    this.setupSignalHandlers();
+  }
+  
+  setupSignalHandlers() {
+    // Handle Ctrl+C gracefully
+    process.on('SIGINT', () => {
+      console.log(chalk.yellow('\n\nReceived SIGINT (Ctrl+C). Exiting gracefully...'));
+      this.running = false;
+      process.exit(0);
+    });
+    
+    // Handle other termination signals
+    process.on('SIGTERM', () => {
+      console.log(chalk.yellow('\n\nReceived SIGTERM. Exiting gracefully...'));
+      this.running = false;
+      process.exit(0);
+    });
   }
   
   async start() {
@@ -47,6 +64,11 @@ export class CLIInterface {
       if (error.isTtyError) {
         console.log(chalk.red('Interactive mode not supported in this environment'));
         process.exit(1);
+      } else if (error.name === 'ExitPromptError' || error.message.includes('User force closed')) {
+        // Handle Ctrl+C in inquirer
+        console.log(chalk.yellow('\nExiting...'));
+        this.running = false;
+        process.exit(0);
       } else {
         console.error(chalk.red('Error:'), error.message);
       }

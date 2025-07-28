@@ -12,6 +12,17 @@ if (process.env.DEBUG) {
   logger.debug('Debug mode enabled');
 }
 
+// Global signal handlers for non-interactive mode
+process.on('SIGINT', () => {
+  console.log(chalk.yellow('\n\nReceived SIGINT (Ctrl+C). Exiting...'));
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log(chalk.yellow('\n\nReceived SIGTERM. Exiting...'));
+  process.exit(0);
+});
+
 const program = new Command();
 
 program
