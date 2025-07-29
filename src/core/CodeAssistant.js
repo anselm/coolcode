@@ -121,29 +121,53 @@ export class CodeAssistant {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
-      // Look for file path followed by code block
-      if (line && !line.startsWith('```') && !line.startsWith('#') && 
-          !line.startsWith('*') && !line.startsWith('-') &&
-          (line.includes('/') || line.includes('.')) && 
-          !line.includes(' ') && !line.includes('`')) {
+      // Look for potential file paths - be more permissive
+      // A file path should:
+      // 1. Not be empty
+      // 2. Not start with common markdown/formatting characters
+      // 3. Either contain a dot (extension) or forward slash (path)
+      // 4. Not contain spaces (unless it's a quoted path)
+      // 5. Not be a markdown heading or list item
+      if (line && 
+          !line.startsWith('```') && 
+          !line.startsWith('#') && 
+          !line.startsWith('*') && 
+          !line.startsWith('-') &&
+          !line.startsWith('>') &&
+          !line.startsWith('|') &&
+          !line.match(/^\d+\./) && // numbered list
+          (line.includes('.') || line.includes('/')) &&
+          (!line.includes(' ') || (line.startsWith('"') && line.endsWith('"')))) {
         
-        // Check if the next non-empty line starts a code block
+        // Clean up quoted paths
+        let potentialPath = line;
+        if (potentialPath.startsWith('"') && potentialPath.endsWith('"')) {
+          potentialPath = potentialPath.slice(1, -1);
+        }
+        
+        // Check if the next few lines contain a code block with SEARCH/REPLACE
         let nextCodeBlockIndex = -1;
-        for (let j = i + 1; j < lines.length; j++) {
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
           const nextLine = lines[j].trim();
           if (nextLine === '') continue; // Skip empty lines
-          if (nextLine.startsWith('```')) {
+          if (nextLine.startsWith('````') || nextLine.startsWith('```')) {
             nextCodeBlockIndex = j;
             break;
           }
-          break; // Found non-empty, non-code-block line
+          // If we hit non-empty, non-code content, stop looking
+          if (nextLine && !nextLine.startsWith('````') && !nextLine.startsWith('```')) {
+            break;
+          }
         }
         
         if (nextCodeBlockIndex > -1) {
           // Find the end of this code block
           let blockEnd = -1;
+          const blockStartLine = lines[nextCodeBlockIndex].trim();
+          const expectedEnd = blockStartLine.startsWith('````') ? '````' : '```';
+          
           for (let k = nextCodeBlockIndex + 1; k < lines.length; k++) {
-            if (lines[k].trim() === '```') {
+            if (lines[k].trim() === expectedEnd) {
               blockEnd = k;
               break;
             }
@@ -154,13 +178,12 @@ export class CodeAssistant {
             const searchMatch = blockContent.match(/<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/);
             
             if (searchMatch) {
-              const filePath = line;
-              logger.debug('Found SEARCH/REPLACE block for file:', filePath);
+              logger.debug('Found SEARCH/REPLACE block for file:', potentialPath);
               logger.debug('Search content length:', searchMatch[1].length);
               logger.debug('Replace content length:', searchMatch[2].length);
               
               changes.push({
-                file: filePath,
+                file: potentialPath,
                 search: searchMatch[1],
                 replace: searchMatch[2]
               });
