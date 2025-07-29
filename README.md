@@ -113,6 +113,9 @@ In interactive mode:
 - `/add <files...>` - Add files to context
 - `/remove <files...>` - Remove files from context
 - `/context` - Show current context
+- `/history` - Show conversation history
+- `/clear-history` - Clear conversation history (memory only)
+- `/flush-history` - Flush conversation history from disk permanently
 - `/config` - Show current configuration
 - `/set <key>=<value>` - Set configuration (autoApply, autoCommit, dryRun)
 - `/clear` - Clear screen
@@ -128,6 +131,17 @@ For complex requests that span multiple lines (like detailed specifications, cod
 3. Type `/multi-end` on an empty line to finish and send
 
 This is especially useful when you need to include code snippets, detailed requirements, or structured requests in your message to the AI assistant.
+
+#### Conversation History
+
+coolcode automatically saves your conversation history to `.coolcode.history` in the current directory. This allows you to:
+
+- **Maintain context** across sessions - when you restart coolcode, it loads your previous conversation
+- **Review past interactions** with `/history` command
+- **Clear current session** with `/clear-history` (keeps file on disk)
+- **Permanently flush history** with `/flush-history` (removes file from disk)
+
+The history file is automatically managed and contains timestamped messages in JSON format. You can safely delete it manually if needed.
 
 ### Default Behavior
 

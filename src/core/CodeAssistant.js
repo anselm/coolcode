@@ -330,6 +330,10 @@ export class CodeAssistant {
     this.conversation.clear();
   }
   
+  async flushConversation() {
+    await this.conversation.flush();
+  }
+  
   getConversationHistory() {
     return this.conversation.getHistory();
   }

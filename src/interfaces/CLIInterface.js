@@ -62,6 +62,13 @@ export class CLIInterface {
     `));
     console.log(chalk.gray('AI-powered coding assistant'));
     console.log(chalk.gray(`Build: ${new Date().toISOString()}`));
+    
+    // Show conversation history status
+    const historyCount = this.assistant.getConversationHistory().length;
+    if (historyCount > 0) {
+      console.log(chalk.gray(`Loaded ${historyCount} messages from conversation history`));
+    }
+    
     console.log(chalk.gray('Interactive chat mode - Type "help" for commands, "exit" to quit\n'));
     
     // Show current context
@@ -171,6 +178,12 @@ export class CLIInterface {
     if (input === '/clear-history') {
       this.assistant.clearConversation();
       console.log(chalk.green('Conversation history cleared'));
+      return;
+    }
+
+    if (input === '/flush-history') {
+      await this.assistant.flushConversation();
+      console.log(chalk.green('Conversation history flushed from disk'));
       return;
     }
 
@@ -301,6 +314,7 @@ export class CLIInterface {
     console.log(chalk.gray('  /context             - Show current context'));
     console.log(chalk.gray('  /history             - Show conversation history'));
     console.log(chalk.gray('  /clear-history       - Clear conversation history'));
+    console.log(chalk.gray('  /flush-history       - Flush conversation history from disk'));
     console.log(chalk.gray('  /config              - Show current configuration'));
     console.log(chalk.gray('  /set <key>=<value>   - Set configuration option'));
     console.log(chalk.gray('  /clear               - Clear screen'));
