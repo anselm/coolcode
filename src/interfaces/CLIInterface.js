@@ -62,7 +62,7 @@ export class CLIInterface {
     `));
     console.log(chalk.gray('AI-powered coding assistant'));
     console.log(chalk.gray(`Build: ${new Date().toISOString()}`));
-    console.log(chalk.gray('Type "help" for commands, "exit" to quit\n'));
+    console.log(chalk.gray('Interactive chat mode - Type "help" for commands, "exit" to quit\n'));
     
     // Show current context
     const context = await this.assistant.getContext();

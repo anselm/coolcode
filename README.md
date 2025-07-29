@@ -61,40 +61,48 @@ export OPENAI_API_KEY="your-openai-api-key-here"
 
 ## Usage
 
-### Interactive Chat Mode
+### Interactive Chat Mode (Default)
+
+Simply run coolcode to start interactive chat mode:
 
 ```bash
-npm start chat
+coolcode
 ```
 
-Or with specific files:
+Or with npm:
 
 ```bash
-npm start chat -f src/index.js package.json
+npm start
+```
+
+You can also explicitly use the chat command with options:
+
+```bash
+coolcode chat -f src/index.js package.json
 ```
 
 Disable auto-apply and auto-commit:
 
 ```bash
-npm start chat --no-auto-apply --no-auto-commit
+coolcode chat --no-auto-apply --no-auto-commit
 ```
 
 ### Single Command Mode
 
 ```bash
-npm start apply "Add error handling to the main function"
+coolcode apply "Add error handling to the main function"
 ```
 
 With dry run:
 
 ```bash
-npm start apply "Refactor the user interface" --dry-run
+coolcode apply "Refactor the user interface" --dry-run
 ```
 
 Disable automatic behavior:
 
 ```bash
-npm start apply "Fix the bug" --no-auto-apply --no-auto-commit
+coolcode apply "Fix the bug" --no-auto-apply --no-auto-commit
 ```
 
 ### CLI Commands
@@ -154,11 +162,11 @@ The assistant supports various models and options:
 
 ```bash
 # Use Claude (default)
-npm start chat --model claude-3-5-sonnet-20241022
+coolcode --model claude-3-5-sonnet-20241022
 
 # Use OpenAI
-npm start chat --model gpt-4
-npm start apply "Fix the bug" --files src/bug.js --model gpt-3.5-turbo
+coolcode --model gpt-4
+coolcode apply "Fix the bug" --files src/bug.js --model gpt-3.5-turbo
 ```
 
 Supported models:
