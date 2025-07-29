@@ -116,4 +116,19 @@ program
     }
   });
 
-program.parse();
+// If no command specified, default to chat
+if (process.argv.length === 2) {
+  // No arguments provided, start chat mode
+  const assistant = new CodeAssistant({
+    model: 'claude-3-5-sonnet-20241022',
+    files: [],
+    autoApply: true,
+    autoCommit: true,
+    dryRun: false
+  });
+  
+  const cli = new CLIInterface(assistant);
+  await cli.start();
+} else {
+  program.parse();
+}
