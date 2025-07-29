@@ -149,6 +149,17 @@ export class CLIInterface {
       return;
     }
 
+    if (input === '/history') {
+      this.showConversationHistory();
+      return;
+    }
+
+    if (input === '/clear-history') {
+      this.assistant.clearConversation();
+      console.log(chalk.green('Conversation history cleared'));
+      return;
+    }
+
     if (input === '/config') {
       this.showConfig();
       return;
@@ -214,6 +225,8 @@ export class CLIInterface {
     console.log(chalk.gray('  /add <files...>      - Add files to context'));
     console.log(chalk.gray('  /remove <files...>   - Remove files from context'));
     console.log(chalk.gray('  /context             - Show current context'));
+    console.log(chalk.gray('  /history             - Show conversation history'));
+    console.log(chalk.gray('  /clear-history       - Clear conversation history'));
     console.log(chalk.gray('  /config              - Show current configuration'));
     console.log(chalk.gray('  /set <key>=<value>   - Set configuration option'));
     console.log(chalk.gray('  /clear               - Clear screen'));
@@ -232,6 +245,34 @@ export class CLIInterface {
     console.log(chalk.gray(`  Auto-apply: ${this.assistant.autoApply}`));
     console.log(chalk.gray(`  Auto-commit: ${this.assistant.autoCommit}`));
     console.log(chalk.gray(`  Dry run: ${this.assistant.dryRun}`));
+    console.log('');
+  }
+
+  showConversationHistory() {
+    const history = this.assistant.getConversationHistory();
+    
+    if (history.length === 0) {
+      console.log(chalk.yellow('No conversation history'));
+      return;
+    }
+    
+    console.log(chalk.blue.bold('\n💬 Conversation History:'));
+    
+    history.forEach((message, index) => {
+      const role = message.role === 'user' ? 
+        chalk.blue('👤 User') : 
+        chalk.green('🤖 Assistant');
+      
+      console.log(`\n${role} (${new Date(message.timestamp).toLocaleTimeString()}):`);
+      
+      // Truncate long messages for display
+      const content = message.content.length > 200 ? 
+        message.content.substring(0, 200) + '...' : 
+        message.content;
+      
+      console.log(chalk.gray(content));
+    });
+    
     console.log('');
   }
 

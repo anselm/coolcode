@@ -34,7 +34,7 @@ export class PromptLoader {
     return this.templates.context;
   }
   
-  buildCodingPrompt({ userRequest, context, files }) {
+  buildCodingPrompt({ userRequest, context, files, conversationHistory = '' }) {
     const filesList = Object.keys(files).join('\n- ');
     const fileContents = Object.entries(files)
       .map(([path, content]) => `=== ${path} ===\n${content}\n`)
@@ -45,6 +45,10 @@ export class PromptLoader {
       .replace('{totalSize}', context.totalSize)
       .replace('{filesList}', filesList);
     
+    // Add conversation history section if available
+    const historySection = conversationHistory ? 
+      `\n## Previous Conversation\n\n${conversationHistory}\n` : '';
+    
     return [
       this.templates.system,
       '',
@@ -52,7 +56,8 @@ export class PromptLoader {
         .replace('{userRequest}', userRequest)
         .replace('{context}', contextInfo)
         .replace('{filesList}', filesList)
-        .replace('{fileContents}', fileContents)
+        .replace('{fileContents}', fileContents),
+      historySection
     ].join('\n');
   }
   

@@ -3,6 +3,7 @@ import { ContextManager } from './ContextManager.js';
 import { GitTool } from '../tools/GitTool.js';
 import { DiffTool } from '../tools/DiffTool.js';
 import { PromptLoader } from './PromptLoader.js';
+import { ConversationHistory } from './ConversationHistory.js';
 import { logger } from '../utils/Logger.js';
 import chalk from 'chalk';
 
@@ -27,6 +28,7 @@ export class CodeAssistant {
     this.git = new GitTool();
     this.diff = new DiffTool();
     this.prompts = new PromptLoader();
+    this.conversation = new ConversationHistory();
     
     this.initialized = false;
   }
@@ -67,18 +69,25 @@ export class CodeAssistant {
     
     console.log(chalk.blue('Processing request...'));
     
+    // Add user message to conversation history
+    this.conversation.addUserMessage(userInput);
+    
     // Get current context
     const context = await this.context.getCurrentContext();
     
-    // Build prompt
+    // Build prompt with conversation history
     const prompt = this.prompts.buildCodingPrompt({
       userRequest: userInput,
       context: context,
-      files: this.context.getFileContents()
+      files: this.context.getFileContents(),
+      conversationHistory: this.conversation.getFormattedHistory()
     });
     
     // Get LLM response
     const response = await this.llm.complete(prompt);
+    
+    // Add assistant response to conversation history
+    this.conversation.addAssistantMessage(response);
     
     // Parse response for file changes
     const changes = this.parseChanges(response);
@@ -264,5 +273,13 @@ export class CodeAssistant {
   async getContext() {
     await this.ensureInitialized();
     return this.context.getCurrentContext();
+  }
+  
+  clearConversation() {
+    this.conversation.clear();
+  }
+  
+  getConversationHistory() {
+    return this.conversation.getHistory();
   }
 }
