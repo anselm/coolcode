@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+
+// Import and run the main application
+import('../src/index.js');
