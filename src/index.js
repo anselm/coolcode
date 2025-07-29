@@ -6,7 +6,7 @@ import { CodeAssistant } from './core/CodeAssistant.js';
 import { CLIInterface } from './interfaces/CLIInterface.js';
 import { logger } from './utils/Logger.js';
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 
 // Set debug mode if DEBUG environment variable is set
 if (process.env.DEBUG) {
