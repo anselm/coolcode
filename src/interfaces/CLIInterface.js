@@ -49,8 +49,18 @@ export class CLIInterface {
   async start() {
     this.running = true;
     
-    console.log(chalk.blue.bold('🤖 coolcode'));
-    console.log(chalk.gray(`v${VERSION} - AI-powered coding assistant`));
+    // ASCII cow banner
+    console.log(chalk.cyan(`
+     _______________
+    < coolcode v${VERSION} >
+     ---------------
+            \\   ^__^
+             \\  (oo)\\_______
+                (__)\\       )\\/\\
+                    ||----w |
+                    ||     ||
+    `));
+    console.log(chalk.gray('AI-powered coding assistant'));
     console.log(chalk.gray('Type "help" for commands, "exit" to quit\n'));
     
     // Show current context
