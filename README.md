@@ -108,7 +108,18 @@ In interactive mode:
 - `/config` - Show current configuration
 - `/set <key>=<value>` - Set configuration (autoApply, autoCommit, dryRun)
 - `/clear` - Clear screen
+- `/multi-start` - Enter multi-line input mode for complex requests
 - `exit` or `quit` - Exit
+
+#### Multi-line Input
+
+For complex requests that span multiple lines (like detailed specifications, code examples, or long explanations), use the multi-line input mode:
+
+1. Type `/multi-start` to begin multi-line input
+2. Enter your request across multiple lines
+3. Type `/multi-end` on an empty line to finish and send
+
+This is especially useful when you need to include code snippets, detailed requirements, or structured requests in your message to the AI assistant.
 
 ### Default Behavior
 
