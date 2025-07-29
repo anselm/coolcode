@@ -1,4 +1,4 @@
-# Code Assistant
+# coolcode
 
 A command-line AI coding assistant similar to aider, built with Node.js.
 
@@ -19,16 +19,16 @@ npm install
 
 ### Global Installation
 
-To use the code assistant from any directory, you can link it globally:
+To use coolcode from any directory, you can link it globally:
 
 ```bash
 # Make the launcher executable and link globally
 chmod +x bin/code-assistant
 npm link
 
-# Now you can use 'code-assistant' from any directory
+# Now you can use 'coolcode' from any directory
 cd /path/to/your/project
-code-assistant chat
+coolcode chat
 ```
 
 To unlink:
@@ -38,7 +38,7 @@ npm run unlink
 # or manually: npm unlink -g
 ```
 
-This creates a global symlink that allows you to run `code-assistant` from any folder while working on different projects.
+This creates a global symlink that allows you to run `coolcode` from any folder while working on different projects.
 
 ## Setup
 

@@ -1,6 +1,8 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 
+const VERSION = '1.0.0';
+
 export class CLIInterface {
   constructor(assistant) {
     this.assistant = assistant;
@@ -47,7 +49,8 @@ export class CLIInterface {
   async start() {
     this.running = true;
     
-    console.log(chalk.blue.bold('🤖 Code Assistant'));
+    console.log(chalk.blue.bold('🤖 coolcode'));
+    console.log(chalk.gray(`v${VERSION} - AI-powered coding assistant`));
     console.log(chalk.gray('Type "help" for commands, "exit" to quit\n'));
     
     // Show current context
