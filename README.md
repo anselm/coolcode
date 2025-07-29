@@ -131,6 +131,53 @@ Supported models:
 - **Claude**: `claude-3-5-sonnet-20241022`, `claude-3-haiku-20240307`, `claude-3-opus-20240229`
 - **OpenAI**: `gpt-4`, `gpt-3.5-turbo`, `gpt-4-turbo`
 
+## How It Works
+
+The Code Assistant follows a structured flow from user input to code changes:
+
+### 1. Input Processing
+- **CLI Interface** (`CLIInterface.js`) captures user input and handles special commands (`/add`, `/remove`, etc.)
+- For coding requests, the input is passed to the **Code Assistant** orchestrator
+
+### 2. Context Assembly
+- **Context Manager** (`ContextManager.js`) maintains a map of loaded files and their contents
+- Current context (files, metadata) is retrieved and prepared for the LLM
+- **Prompt Loader** (`PromptLoader.js`) combines system prompts, context information, and user request
+
+### 3. LLM Interaction
+- **LLM Provider** (`LLMProvider.js`) sends the assembled prompt to the configured AI model (Claude/OpenAI)
+- The provider handles API communication and returns the model's response
+
+### 4. Response Parsing
+- **Code Assistant** parses the LLM response using regex to extract SEARCH/REPLACE blocks
+- Each block is validated and converted into a structured change object with file path, search text, and replacement text
+
+### 5. Change Application
+- **Diff Tool** (`DiffTool.js`) generates visual diffs showing what will change
+- If not in dry-run mode, changes are applied by:
+  - Reading existing file content
+  - Performing search/replace operations
+  - Writing updated content back to files
+  - Creating new files when search section is empty
+
+### 6. Git Integration
+- **Git Tool** (`GitTool.js`) automatically stages changed files
+- Generates descriptive commit messages based on user request and modified files
+- Commits changes if auto-commit is enabled
+
+### Internal Flow Diagram
+```
+User Input → CLI Interface → Code Assistant
+                                ↓
+Context Manager ← Prompt Loader ← LLM Provider
+                                ↓
+Response Parsing → Diff Tool → File System
+                                ↓
+Git Tool → Commit (if enabled)
+```
+
+This architecture ensures clean separation of concerns while maintaining a smooth user experience from request to applied changes.
+
 ## Development
 
 Run in development mode with auto-reload:
