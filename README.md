@@ -139,20 +139,58 @@ The Code Assistant follows a structured flow from user input to code changes:
 - **CLI Interface** (`CLIInterface.js`) captures user input and handles special commands (`/add`, `/remove`, etc.)
 - For coding requests, the input is passed to the **Code Assistant** orchestrator
 
-### 2. Context Assembly
+### 2. Code Assistant Orchestrator
+The **Code Assistant** (`CodeAssistant.js`) serves as the central coordinator that:
+- **Manages Configuration**: Tracks settings like `autoApply`, `autoCommit`, `dryRun`, and selected model
+- **Coordinates Components**: Initializes and manages all tool instances (ContextManager, PromptLoader, LLMProvider, etc.)
+- **Handles Lifecycle**: Ensures proper initialization order and manages the complete request-response cycle
+- **Processes Requests**: Takes user input and orchestrates the entire flow from context assembly to change application
+- **Error Handling**: Provides centralized error handling and logging throughout the process
+
+### 3. Context Assembly & Prompt Structure
 - **Context Manager** (`ContextManager.js`) maintains a map of loaded files and their contents
-- Current context (files, metadata) is retrieved and prepared for the LLM
-- **Prompt Loader** (`PromptLoader.js`) combines system prompts, context information, and user request
+- **Prompt Loader** (`PromptLoader.js`) assembles the final prompt sent to the LLM with this structure:
 
-### 3. LLM Interaction
+```
+[System Prompt - from prompts/system.txt]
+- Instructions on how to act as an expert software developer
+- Rules for SEARCH/REPLACE block format
+- Guidelines for suggesting shell commands
+
+[Context Information - from prompts/context.txt]
+- Current project state: {totalFiles} files, {totalSize} bytes
+- List of files in context:
+  - file1.js
+  - file2.py
+  - ...
+
+[File Contents]
+=== path/to/file1.js ===
+[actual file content]
+
+=== path/to/file2.py ===
+[actual file content]
+
+[User Request]
+{user's actual request}
+```
+
+This structured approach ensures the LLM has complete context about the codebase, clear instructions on response format, and the specific user request.
+
+### 4. LLM Interaction
 - **LLM Provider** (`LLMProvider.js`) sends the assembled prompt to the configured AI model (Claude/OpenAI)
-- The provider handles API communication and returns the model's response
+- The provider handles API communication, model selection, and returns the model's response
+- Supports both streaming and non-streaming responses depending on the interface
 
-### 4. Response Parsing
-- **Code Assistant** parses the LLM response using regex to extract SEARCH/REPLACE blocks
-- Each block is validated and converted into a structured change object with file path, search text, and replacement text
+### 5. Response Parsing
+The **Code Assistant** orchestrator parses the LLM response by:
+- Using regex to extract SEARCH/REPLACE blocks from the response text
+- Extracting file paths from lines preceding each code block
+- Validating block structure and ensuring proper formatting
+- Converting each block into a structured change object: `{ file, search, replace }`
+- Handling edge cases like new file creation (empty search section)
 
-### 5. Change Application
+### 6. Change Application
 - **Diff Tool** (`DiffTool.js`) generates visual diffs showing what will change
 - If not in dry-run mode, changes are applied by:
   - Reading existing file content
@@ -160,7 +198,7 @@ The Code Assistant follows a structured flow from user input to code changes:
   - Writing updated content back to files
   - Creating new files when search section is empty
 
-### 6. Git Integration
+### 7. Git Integration
 - **Git Tool** (`GitTool.js`) automatically stages changed files
 - Generates descriptive commit messages based on user request and modified files
 - Commits changes if auto-commit is enabled
