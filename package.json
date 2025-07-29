@@ -5,11 +5,13 @@
   "main": "src/index.js",
   "type": "module",
   "bin": {
-    "code-assistant": "./src/index.js"
+    "code-assistant": "./bin/code-assistant"
   },
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "link": "npm link",
+    "unlink": "npm unlink -g"
   },
   "dependencies": {
     "commander": "^11.0.0",
