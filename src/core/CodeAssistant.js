@@ -115,51 +115,59 @@ export class CodeAssistant {
     logger.debug('Parsing LLM response for changes...');
     logger.debug('Response length:', response.length);
     
-    // Parse SEARCH/REPLACE blocks from LLM response
-    const searchReplaceRegex = /```(\w+)?\n<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE\n```/g;
     const changes = [];
-    let match;
-    
-    // Extract file path from preceding line
     const lines = response.split('\n');
-    let currentFile = null;
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
-      // Check if this line looks like a file path
+      // Look for file path followed by code block
       if (line && !line.startsWith('```') && !line.startsWith('#') && 
+          !line.startsWith('*') && !line.startsWith('-') &&
           (line.includes('/') || line.includes('.')) && 
-          !line.includes(' ')) {
-        logger.debug('Found potential file path:', line);
-        currentFile = line;
-      }
-      
-      // Check if next lines contain a SEARCH/REPLACE block
-      if (line.startsWith('```') && i + 1 < lines.length) {
-        const blockStart = i;
-        let blockEnd = -1;
+          !line.includes(' ') && !line.includes('`')) {
         
+        // Check if the next non-empty line starts a code block
+        let nextCodeBlockIndex = -1;
         for (let j = i + 1; j < lines.length; j++) {
-          if (lines[j].trim() === '```') {
-            blockEnd = j;
+          const nextLine = lines[j].trim();
+          if (nextLine === '') continue; // Skip empty lines
+          if (nextLine.startsWith('```')) {
+            nextCodeBlockIndex = j;
             break;
           }
+          break; // Found non-empty, non-code-block line
         }
         
-        if (blockEnd > -1) {
-          const blockContent = lines.slice(blockStart + 1, blockEnd).join('\n');
-          const searchMatch = blockContent.match(/<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/);
+        if (nextCodeBlockIndex > -1) {
+          // Find the end of this code block
+          let blockEnd = -1;
+          for (let k = nextCodeBlockIndex + 1; k < lines.length; k++) {
+            if (lines[k].trim() === '```') {
+              blockEnd = k;
+              break;
+            }
+          }
           
-          if (searchMatch && currentFile) {
-            logger.debug('Found SEARCH/REPLACE block for file:', currentFile);
-            logger.debug('Search content length:', searchMatch[1].length);
-            logger.debug('Replace content length:', searchMatch[2].length);
-            changes.push({
-              file: currentFile,
-              search: searchMatch[1],
-              replace: searchMatch[2]
-            });
+          if (blockEnd > -1) {
+            const blockContent = lines.slice(nextCodeBlockIndex + 1, blockEnd).join('\n');
+            const searchMatch = blockContent.match(/<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/);
+            
+            if (searchMatch) {
+              const filePath = line;
+              logger.debug('Found SEARCH/REPLACE block for file:', filePath);
+              logger.debug('Search content length:', searchMatch[1].length);
+              logger.debug('Replace content length:', searchMatch[2].length);
+              
+              changes.push({
+                file: filePath,
+                search: searchMatch[1],
+                replace: searchMatch[2]
+              });
+              
+              // Skip past this block
+              i = blockEnd;
+            }
           }
         }
       }
@@ -193,32 +201,52 @@ export class CodeAssistant {
       return;
     }
 
-    console.log(chalk.blue('Applying changes...'));
-    
     const changedFiles = [];
+    const errors = [];
+    
     for (const change of result.changes) {
-      logger.debug('Applying change to file:', change.file);
-      logger.debug('Change details:', {
-        isNewFile: change.search === '',
-        searchLength: change.search.length,
-        replaceLength: change.replace.length
+      try {
+        logger.debug('Applying change to file:', change.file);
+        logger.debug('Change details:', {
+          isNewFile: change.search === '',
+          searchLength: change.search.length,
+          replaceLength: change.replace.length
+        });
+        
+        await this.diff.applyChange(change);
+        
+        const action = change.search === '' ? 'Created' : 'Modified';
+        console.log(chalk.green(`✓ ${action} ${change.file}`));
+        changedFiles.push(change.file);
+        
+      } catch (error) {
+        logger.error('Failed to apply change to file:', change.file, error);
+        console.log(chalk.red(`✗ Failed to modify ${change.file}: ${error.message}`));
+        errors.push({ file: change.file, error: error.message });
+      }
+    }
+    
+    logger.debug('Changes applied. Success:', changedFiles.length, 'Errors:', errors.length);
+    
+    if (errors.length > 0) {
+      console.log(chalk.yellow(`\n⚠️  ${errors.length} file(s) failed to update:`));
+      errors.forEach(({ file, error }) => {
+        console.log(chalk.red(`  - ${file}: ${error}`));
       });
+    }
+    
+    if (changedFiles.length > 0) {
+      // Update context with new file contents
+      await this.context.refresh();
       
-      await this.diff.applyChange(change);
-      console.log(chalk.green(`✓ Applied changes to ${change.file}`));
-      changedFiles.push(change.file);
+      // Auto-commit if enabled and we're in a git repo
+      if (this.autoCommit) {
+        logger.debug('Auto-committing changes...');
+        await this.commitChanges(changedFiles, result.userRequest);
+      }
     }
     
-    logger.debug('All changes applied. Changed files:', changedFiles);
-    
-    // Update context with new file contents
-    await this.context.refresh();
-    
-    // Auto-commit if enabled and we're in a git repo
-    if (this.autoCommit && changedFiles.length > 0) {
-      logger.debug('Auto-committing changes...');
-      await this.commitChanges(changedFiles, result.userRequest);
-    }
+    return { changedFiles, errors };
   }
 
   async commitChanges(files, userRequest) {

@@ -98,29 +98,47 @@ export class DiffTool {
     logger.debug('applyChange called for file:', file);
     
     let content = '';
+    let isNewFile = false;
     
     // Read existing content
     try {
       content = await fs.readFile(file, 'utf8');
       logger.debug('Read existing file content, length:', content.length);
     } catch (error) {
-      // File doesn't exist
-      logger.debug('File does not exist, creating new file:', file);
-      content = '';
+      if (error.code === 'ENOENT') {
+        // File doesn't exist
+        logger.debug('File does not exist, creating new file:', file);
+        content = '';
+        isNewFile = true;
+      } else {
+        logger.error('Error reading file:', file, error);
+        throw new Error(`Cannot read file ${file}: ${error.message}`);
+      }
     }
     
     // Apply change
-    const newContent = this.applySearchReplace(content, search, replace);
-    logger.debug('Generated new content, length:', newContent.length);
+    let newContent;
+    try {
+      newContent = this.applySearchReplace(content, search, replace);
+      logger.debug('Generated new content, length:', newContent.length);
+    } catch (error) {
+      logger.error('Error applying search/replace to file:', file, error);
+      throw error;
+    }
     
     // Ensure directory exists
     const dirPath = path.dirname(file);
     logger.debug('Directory path:', dirPath);
     
-    if (dirPath && dirPath !== '.') {
-      logger.debug('Ensuring directory exists:', dirPath);
-      await fs.ensureDir(dirPath);
-      logger.debug('Directory created/verified');
+    if (dirPath && dirPath !== '.' && dirPath !== '') {
+      try {
+        logger.debug('Ensuring directory exists:', dirPath);
+        await fs.ensureDir(dirPath);
+        logger.debug('Directory created/verified');
+      } catch (error) {
+        logger.error('Error creating directory:', dirPath, error);
+        throw new Error(`Cannot create directory ${dirPath}: ${error.message}`);
+      }
     }
     
     // Write new content
@@ -131,15 +149,23 @@ export class DiffTool {
       await fs.writeFile(file, newContent, 'utf8');
       logger.success('File written successfully:', file);
       
-      // Verify file was written
+      // Verify file was written correctly
       const stats = await fs.stat(file);
-      logger.debug('File stats after write:', {
+      const verifyContent = await fs.readFile(file, 'utf8');
+      
+      if (verifyContent !== newContent) {
+        throw new Error('File content verification failed - written content does not match expected content');
+      }
+      
+      logger.debug('File verification successful:', {
         size: stats.size,
-        exists: true
+        contentLength: verifyContent.length,
+        isNewFile: isNewFile
       });
+      
     } catch (error) {
       logger.error('Failed to write file:', file, error);
-      throw error;
+      throw new Error(`Cannot write file ${file}: ${error.message}`);
     }
   }
   

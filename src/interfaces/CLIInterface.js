@@ -192,9 +192,16 @@ export class CLIInterface {
       console.log(result.response);
       
       if (result.changes.length > 0) {
-        console.log(chalk.yellow(`\n📝 Found ${result.changes.length} file changes:`));
+        console.log(chalk.yellow(`\n📝 Detected ${result.changes.length} file change(s):`));
+        
+        // List the files that will be changed
+        result.changes.forEach((change, i) => {
+          const action = change.search === '' ? 'CREATE' : 'MODIFY';
+          console.log(chalk.gray(`  ${i + 1}. ${action} ${change.file}`));
+        });
         
         // Show diffs
+        console.log(chalk.blue('\n📋 Diffs:'));
         for (const diff of result.diffs) {
           this.assistant.diff.displayDiff(diff);
         }
@@ -211,18 +218,23 @@ export class CLIInterface {
           ]);
           
           if (confirm) {
+            console.log(chalk.blue('\n🔧 Applying changes...'));
             await this.assistant.applyChanges(result);
-            console.log(chalk.green('✅ Changes applied successfully!'));
+            console.log(chalk.green('✅ All changes applied successfully!'));
           } else {
             console.log(chalk.yellow('❌ Changes discarded'));
           }
         } else {
-          console.log(chalk.green('✅ Changes applied and committed automatically!'));
+          // Auto-apply was already done in processRequest, just confirm it worked
+          console.log(chalk.green('✅ All changes applied and committed automatically!'));
         }
+      } else {
+        console.log(chalk.yellow('\n📝 No file changes detected in the response.'));
       }
       
     } catch (error) {
       console.error(chalk.red('❌ Error:'), error.message);
+      logger.debug('Full error details:', error);
     }
   }
   
