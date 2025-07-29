@@ -121,66 +121,7 @@ export class CodeAssistant {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
-      // Check for *CREATE NEW FILE* pattern
-      if (line.includes('*CREATE NEW FILE*') || line.includes('CREATE NEW FILE')) {
-        // Look for the file path in the next few lines
-        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-          const nextLine = lines[j].trim();
-          if (nextLine && 
-              !nextLine.startsWith('*') && 
-              !nextLine.startsWith('-') &&
-              !nextLine.startsWith('#') &&
-              (nextLine.includes('.') || nextLine.includes('/'))) {
-            
-            // Found potential file path, now look for code block
-            let codeBlockIndex = -1;
-            for (let k = j + 1; k < Math.min(j + 10, lines.length); k++) {
-              if (lines[k].trim().startsWith('```')) {
-                codeBlockIndex = k;
-                break;
-              }
-            }
-            
-            if (codeBlockIndex > -1) {
-              // Find the end of the code block
-              let blockEnd = -1;
-              for (let l = codeBlockIndex + 1; l < lines.length; l++) {
-                if (lines[l].trim() === '```') {
-                  blockEnd = l;
-                  break;
-                }
-              }
-              
-              if (blockEnd > -1) {
-                const blockContent = lines.slice(codeBlockIndex + 1, blockEnd).join('\n');
-                
-                // Skip if the block content looks like instructions rather than file content
-                if (blockContent.includes('*SEARCH/REPLACE block* Rules:') ||
-                    blockContent.includes('<<<<<<< SEARCH') ||
-                    blockContent.includes('Every *SEARCH/REPLACE block*') ||
-                    blockContent.includes('ONLY EVER RETURN CODE')) {
-                  logger.debug('Skipping CREATE NEW FILE block that contains instructions rather than content');
-                  i = blockEnd;
-                  break;
-                }
-                
-                changes.push({
-                  file: nextLine,
-                  search: '', // Empty search for new file
-                  replace: blockContent
-                });
-                
-                logger.debug('Found CREATE NEW FILE pattern for:', nextLine);
-                i = blockEnd; // Skip past this block
-                break;
-              }
-            }
-          }
-        }
-        continue;
-      }
-      
-      // Look for potential file paths - be more permissive
+      // Look for potential file paths
       // A file path should:
       // 1. Not be empty
       // 2. Not start with common markdown/formatting characters
