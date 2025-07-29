@@ -90,15 +90,7 @@ export class CLIInterface {
         }
       });
       
-      const trimmedInput = input.trim();
-      
-      // Check if user wants to enter multiline mode
-      if (trimmedInput === '{') {
-        const multilineInput = await this.collectMultilineInput();
-        await this.handleInput(multilineInput);
-      } else {
-        await this.handleInput(trimmedInput);
-      }
+      await this.handleInput(input.trim());
     } catch (error) {
       if (error.isTtyError) {
         console.log(chalk.red('Interactive mode not supported in this environment'));
@@ -177,6 +169,14 @@ export class CLIInterface {
       await this.handleConfigSet(input.substring(5));
       return;
     }
+
+    if (input === '/multi-start') {
+      const multilineInput = await this.collectMultilineInput();
+      if (multilineInput) {
+        await this.handleInput(multilineInput);
+      }
+      return;
+    }
     
     // Process as coding request
     await this.processCodingRequest(input);
@@ -227,7 +227,7 @@ export class CLIInterface {
   }
   
   async collectMultilineInput() {
-    console.log(chalk.gray('Entering multiline mode. Type } on an empty line to finish.'));
+    console.log(chalk.gray('Entering multiline mode. Type /multi-end on an empty line to finish.'));
     const lines = [];
     
     while (this.running) {
@@ -249,7 +249,7 @@ export class CLIInterface {
         });
         
         // Check if user wants to exit multiline mode
-        if (line.trim() === '}') {
+        if (line.trim() === '/multi-end') {
           break;
         }
         
@@ -278,12 +278,12 @@ export class CLIInterface {
     console.log(chalk.gray('  /config              - Show current configuration'));
     console.log(chalk.gray('  /set <key>=<value>   - Set configuration option'));
     console.log(chalk.gray('  /clear               - Clear screen'));
-    console.log(chalk.gray('  {                    - Start multiline input mode'));
+    console.log(chalk.gray('  /multi-start         - Start multiline input mode'));
     console.log(chalk.gray('  <message>            - Send coding request to AI'));
     console.log('');
     console.log(chalk.blue.bold('📝 Multiline Input:'));
-    console.log(chalk.gray('  Type { on an empty line to start multiline mode'));
-    console.log(chalk.gray('  Type } on an empty line to finish and send'));
+    console.log(chalk.gray('  Type /multi-start to begin multiline input'));
+    console.log(chalk.gray('  Type /multi-end on an empty line to finish and send'));
     console.log('');
     console.log(chalk.blue.bold('📝 Configuration Options:'));
     console.log(chalk.gray('  autoApply=true/false - Auto-apply changes (default: true)'));
