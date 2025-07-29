@@ -134,7 +134,7 @@ export class CodeAssistant {
             
             // Found potential file path, now look for code block
             let codeBlockIndex = -1;
-            for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
+            for (let k = j + 1; k < Math.min(j + 10, lines.length); k++) {
               if (lines[k].trim().startsWith('```')) {
                 codeBlockIndex = k;
                 break;
@@ -153,6 +153,17 @@ export class CodeAssistant {
               
               if (blockEnd > -1) {
                 const blockContent = lines.slice(codeBlockIndex + 1, blockEnd).join('\n');
+                
+                // Skip if the block content looks like instructions rather than file content
+                if (blockContent.includes('*SEARCH/REPLACE block* Rules:') ||
+                    blockContent.includes('<<<<<<< SEARCH') ||
+                    blockContent.includes('Every *SEARCH/REPLACE block*') ||
+                    blockContent.includes('ONLY EVER RETURN CODE')) {
+                  logger.debug('Skipping CREATE NEW FILE block that contains instructions rather than content');
+                  i = blockEnd;
+                  break;
+                }
+                
                 changes.push({
                   file: nextLine,
                   search: '', // Empty search for new file
