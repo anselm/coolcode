@@ -1,11 +1,11 @@
 {
-  "name": "code-assistant",
+  "name": "coolcode",
   "version": "1.0.0",
   "description": "A command-line coding assistant similar to aider",
   "main": "src/index.js",
   "type": "module",
   "bin": {
-    "code-assistant": "./bin/code-assistant"
+    "coolcode": "./bin/coolcode"
   },
   "scripts": {
     "start": "node src/index.js",
